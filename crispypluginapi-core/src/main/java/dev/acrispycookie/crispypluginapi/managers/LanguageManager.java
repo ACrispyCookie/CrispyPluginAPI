@@ -20,10 +20,6 @@ public class LanguageManager extends BaseManager {
         super(api);
     }
 
-    public void disableDefault() {
-        enabled = false;
-    }
-
     public void load() throws ManagerLoadException {
         if(enabled) {
             try {
@@ -36,6 +32,19 @@ public class LanguageManager extends BaseManager {
 
     public void unload() {
         yamlManager = null;
+    }
+
+    @Override
+    public void reload() throws ManagerReloadException {
+        try {
+            yamlManager.reload();
+        } catch (IOException e) {
+            throw new ManagerReloadException(e, true, true);
+        }
+    }
+
+    public void disableDefault() {
+        enabled = false;
     }
 
     public Component get(String path) {
@@ -95,14 +104,5 @@ public class LanguageManager extends BaseManager {
 
     private String addRootPath(String path) {
         return "features." + path;
-    }
-
-    @Override
-    public void reload() throws ManagerReloadException {
-        try {
-            yamlManager.reload();
-        } catch (IOException e) {
-            throw new ManagerReloadException(e, true, true);
-        }
     }
 }

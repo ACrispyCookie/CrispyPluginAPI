@@ -24,6 +24,34 @@ public class ConfigManager extends BaseManager {
         this.toLoad.add(defaultConfig);
     }
 
+    public void load() throws ManagerLoadException {
+        for(ConfigInfo info : toLoad) {
+            try {
+                YamlFileManager manager = new YamlFileManager(api, info.getFile(), info.getDirectory());
+                configs.put(info, manager);
+            } catch (IOException e) {
+                throw new ManagerLoadException(e);
+            }
+        }
+    }
+
+    public void unload() {
+        configs.clear();
+        toLoad.clear();
+        defaultConfig = null;
+    }
+
+    @Override
+    public void reload() throws ManagerReloadException {
+        for (ConfigInfo i : configs.keySet()) {
+            try {
+                configs.get(i).reload();
+            } catch (IOException e) {
+                throw new ManagerReloadException(e, true, true);
+            }
+        }
+    }
+
     public <T> T getAs(ConfigInfo config, String path, Class<T> tClass) throws InvalidTypeException {
         if(!configs.get(config).get().is(path, tClass))
             throw new InvalidTypeException("Value at " + path + " is not of " + tClass.getSimpleName() + ".");
@@ -205,7 +233,7 @@ public class ConfigManager extends BaseManager {
         toLoad.add(info);
     }
 
-    public void reloadSerializable() {
+    public void onSerializableRegister() {
         try {
             for (YamlFileManager yaml : configs.values()) {
                 yaml.get().reload();
@@ -213,23 +241,6 @@ public class ConfigManager extends BaseManager {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void load() throws ManagerLoadException {
-        for(ConfigInfo info : toLoad) {
-            try {
-                YamlFileManager manager = new YamlFileManager(api, info.getFile(), info.getDirectory());
-                configs.put(info, manager);
-            } catch (IOException e) {
-                throw new ManagerLoadException(e);
-            }
-        }
-    }
-
-    public void unload() {
-        configs.clear();
-        toLoad.clear();
-        defaultConfig = null;
     }
 
     public void disableDefault() {
@@ -267,17 +278,6 @@ public class ConfigManager extends BaseManager {
     public static class InvalidTypeException extends RuntimeException {
         public InvalidTypeException(String errorMessage) {
             super(errorMessage);
-        }
-    }
-
-    @Override
-    public void reload() throws ManagerReloadException {
-        for (ConfigInfo i : configs.keySet()) {
-            try {
-                configs.get(i).reload();
-            } catch (IOException e) {
-                throw new ManagerReloadException(e, true, true);
-            }
         }
     }
 }

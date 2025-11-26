@@ -9,11 +9,15 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class DataManager extends BaseManager {
 
     private boolean enabled = false;
     private SessionFactory factory;
     private String tablePrefix;
+    private final Set<Class<?>> annotatedClasses = new HashSet<>();
 
     public DataManager(CrispyPluginAPI api) {
         super(api);
@@ -35,12 +39,6 @@ public class DataManager extends BaseManager {
             return;
         if(isConfigurationDefault())
             throw new ManagerLoadException("Please configure the database settings in the config.yml file and restart the server.");
-
-        try {
-            initHibernate();
-        } catch (Exception e) {
-            throw new ManagerLoadException(e);
-        }
     }
 
     public void unload() {
@@ -61,6 +59,18 @@ public class DataManager extends BaseManager {
         }
     }
 
+    public void registerAnnotated(Class<?> clazz) {
+        annotatedClasses.add(clazz);
+    }
+
+    public void onAnnotatedRegister() throws ManagerLoadException {
+        try {
+            initHibernate();
+        } catch (Exception e) {
+            throw new ManagerLoadException(e);
+        }
+    }
+
     public Session newSession() {
         if (!enabled)
             return null;
@@ -69,6 +79,7 @@ public class DataManager extends BaseManager {
 
     private void initHibernate() throws HibernateError {
         Configuration configuration = new Configuration();
+        annotatedClasses.forEach(configuration::addAnnotatedClass);
         String type = getOptionValue(DatabaseOption.TYPE);
         String database = getOptionValue(DatabaseOption.DATABASE);
         configuration.setProperty(AvailableSettings.DIALECT, getHibernateDialect(type));

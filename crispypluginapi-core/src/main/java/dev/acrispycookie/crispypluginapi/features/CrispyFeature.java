@@ -51,6 +51,7 @@ public abstract class CrispyFeature<C extends ConfigurationOption, M extends Str
         this.commands = new HashSet<>();
         this.listeners = new HashSet<>();
         serializableToRegister().forEach(AdapterPair::register);
+        getData().stream().map(D::clazz).forEach(api.getManager(DataManager.class)::registerAnnotated);
     }
 
     public boolean load() {
@@ -133,48 +134,36 @@ public abstract class CrispyFeature<C extends ConfigurationOption, M extends Str
     }
 
     public <T> T getData(D option, Class<T> clazz, Object id) {
-        DataManager manager = api.getManager(DataManager.class);
-        Transaction transaction = null;
-        try (Session session = manager.newSession()) {
-            transaction = session.beginTransaction();
-            T toReturn = session.get(clazz, id);
-            transaction.commit();
-            return toReturn;
-        } catch (Exception e) {
-            if (transaction != null)
-                transaction.rollback();
-            throw new RuntimeException(e);
-        }
+        return commitDataTransaction(session -> {
+            return session.get(clazz, id);
+        });
     }
 
     public boolean commitDataTransaction(Consumer<Session> consumer) {
-        DataManager manager = api.getManager(DataManager.class);
-        Transaction transaction = null;
-        try (Session session = manager.newSession()) {
-            transaction = session.beginTransaction();
+        return commitDataTransaction(session -> {
             consumer.accept(session);
-            transaction.commit();
             return true;
-        } catch (Exception e) {
-            if (transaction != null)
-                transaction.rollback();
-            CrispyLogger.printException(api.getPlugin(), e, "Couldn't complete a data transaction from the feature: " + getName());
-            return false;
-        }
+        }) != null;
     }
 
     public <T> T commitDataTransaction(Function<Session, T> consumer) {
         DataManager manager = api.getManager(DataManager.class);
+        Session session = null;
         Transaction transaction = null;
-        try (Session session = manager.newSession()) {
+        try {
+            session = manager.newSession();
             transaction = session.beginTransaction();
             T toReturn = consumer.apply(session);
             transaction.commit();
+            session.close();
             return toReturn;
         } catch (Exception e) {
-            if (transaction != null)
-                transaction.rollback();
             CrispyLogger.printException(api.getPlugin(), e, "Couldn't complete a data transaction from the feature: " + getName());
+            if (session != null) {
+                if (transaction != null)
+                    transaction.rollback();
+                session.close();
+            }
             return null;
         }
     }

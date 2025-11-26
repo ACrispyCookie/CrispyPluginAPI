@@ -6,6 +6,9 @@ database:
   username: "test"
   password: "test"
   table-prefix: "test"
+communication:
+  mode: "plugin_message" #plugin_message, rabbitmq
+  
 features:
   base:
     enabled: true

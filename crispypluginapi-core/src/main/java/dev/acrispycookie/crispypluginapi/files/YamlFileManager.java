@@ -19,7 +19,10 @@ public class YamlFileManager extends DataFileManager {
 
     public YamlFileManager(CrispyPluginAPI api, String name, String directory) throws IOException {
         super(api, name, directory);
-        yaml = YamlDocument.create(getFile(), configSettings);
+        if (configSettings == null)
+            yaml = YamlDocument.create(getFile());
+        else
+            yaml = YamlDocument.create(getFile(), configSettings);
         missingFields = loadDefaultFields() + loadMissingFields();
         if (missingFields != 0)
             CrispyLogger.log(api.getPlugin(), Level.WARNING, "Configuration \"" + name + "\" was missing " + missingFields + " field" + (missingFields != 1 ? "s!" : "!"));
@@ -64,7 +67,11 @@ public class YamlFileManager extends DataFileManager {
 
     private int loadMissingFields() {
         try {
-            YamlDocument original = YamlDocument.create(getOriginalContent(), configSettings);
+            YamlDocument original;
+            if (configSettings == null)
+                original = YamlDocument.create(getOriginalContent());
+            else
+                original = YamlDocument.create(getOriginalContent(), configSettings);
             int count = 0;
             for (Route field : original.getRoutes(true)) {
                 if (yaml.contains(field))
@@ -83,7 +90,11 @@ public class YamlFileManager extends DataFileManager {
             InputStream stream = getDefaultContent();
             if (stream == null)
                 return 0;
-            YamlDocument original = YamlDocument.create(stream, configSettings);
+            YamlDocument original;
+            if (configSettings == null)
+                original = YamlDocument.create(getDefaultContent());
+            else
+                original = YamlDocument.create(getDefaultContent(), configSettings);
             int count = 0;
             for (String field : original.getRoutesAsStrings(true)) {
                 if (yaml.contains(field) || shouldNotLoadDatabase(field))
