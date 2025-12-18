@@ -6,15 +6,14 @@
     <parent>
         <groupId>dev.acrispycookie</groupId>
         <artifactId>CrispyPluginAPI</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>crispypluginapi-core-spigot</artifactId>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <commonsVersion>1.0.0</commonsVersion>
+        <spigotVersion>1.21.1-R0.1-SNAPSHOT</spigotVersion>
     </properties>
 
     <repositories>
@@ -26,20 +25,20 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>dev.acrispycookie</groupId>
             <artifactId>crispypluginapi-core</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.acrispycookie</groupId>
             <artifactId>crispycommons-spigot</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${commonsVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${spigotVersion}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
