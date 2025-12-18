@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>dev.acrispycookie</groupId>
-            <artifactId>crispycommons-spigot</artifactId>
+            <artifactId>crispycommons-core-spigot</artifactId>
             <version>${commonsVersion}</version>
         </dependency>
         <dependency>
