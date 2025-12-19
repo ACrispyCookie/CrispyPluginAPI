@@ -12,8 +12,7 @@ import dev.acrispycookie.crispypluginapi.managers.*;
 import dev.dejvokep.boostedyaml.settings.Settings;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.logging.Level;
 
 public abstract class CrispyPluginAPI {
@@ -21,7 +20,8 @@ public abstract class CrispyPluginAPI {
     protected final CrispyPlugin plugin;
     protected final CrispyCommons commons;
     private long beforeLoading;
-    private final HashMap<Class<? extends BaseManager>, BaseManager> managers;
+    private final SortedMap<ManagerType, List<Class<? extends BaseManager>>> managers;
+    private final Map<Class<? extends BaseManager>, BaseManager> managerInstances;
     protected abstract CrispyCommons setupCrispyCommons(CommonsSettings settings);
     public abstract void registerListener(CrispyPlugin plugin, PlatformListener listener);
     public abstract void unregisterListener(PlatformListener listener);
@@ -29,8 +29,8 @@ public abstract class CrispyPluginAPI {
 
     public CrispyPluginAPI(CrispyPlugin plugin, CommonsSettings settings) {
         this.plugin = plugin;
-        this.managers = new HashMap<>();
-        this.beforeLoading = System.currentTimeMillis();
+        this.managers = new TreeMap<>(Enum::compareTo);
+        this.managerInstances = new HashMap<>();
         this.commons = setupCrispyCommons(settings);
         initManagers();
     }
@@ -51,7 +51,7 @@ public abstract class CrispyPluginAPI {
     }
 
     public CrispyPluginAPI enableDatabase() {
-        getManager(DataManager.class).setEnabled(true);
+        getManager(SimpleDataManager.class).setEnabled(true);
         return this;
     }
 
@@ -65,20 +65,37 @@ public abstract class CrispyPluginAPI {
         return this;
     }
 
+    public CrispyPluginAPI addManager(ManagerType type, Class<? extends BaseManager> managerClass) {
+        try {
+            BaseManager instance = managerClass.getConstructor(CrispyPluginAPI.class).newInstance(this);
+            managerInstances.put(managerClass, instance);
+            managers.get(type).add(managerClass);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add manager " + managerClass.getSimpleName(), e);
+        }
+        return this;
+    }
+
     public void start() {
-        for (ManagerType t : ManagerType.values()) {
-            try {
-                managers.get(t.getType()).load();
-            } catch (BaseManager.ManagerLoadException e) {
-                CrispyLogger.printException(plugin, e, "Couldn't load because this manager failed to load: " + t.name());
-                CrispyLogger.log(plugin, Level.SEVERE, "Configure your plugin correctly and restart or contact the developer!");
-                return;
-            } catch (Exception e) {
-                CrispyLogger.printException(plugin, e, "A critical error occurred while loading the manager: " + t.name());
-                CrispyLogger.log(plugin, Level.SEVERE, "Please contact your developer!");
-                return;
+        this.beforeLoading = System.currentTimeMillis();
+        getManager(FeatureManager.class).initializeFeatures();
+
+        for (ManagerType type : managers.keySet()) {
+            for (Class<? extends BaseManager> manager : managers.get(type)) {
+                try {
+                    managerInstances.get(manager).load();
+                } catch (BaseManager.ManagerLoadException e) {
+                    CrispyLogger.printException(plugin, e, "Couldn't load because this manager failed to load: " + manager.getSimpleName());
+                    CrispyLogger.log(plugin, Level.SEVERE, "Configure your plugin correctly and restart or contact the developer!");
+                    return;
+                } catch (Exception e) {
+                    CrispyLogger.printException(plugin, e, "A critical error occurred while loading the manager: " + manager.getSimpleName());
+                    CrispyLogger.log(plugin, Level.SEVERE, "Please contact your developer!");
+                    return;
+                }
             }
         }
+
         CrispyLogger.log(plugin, Level.INFO, "Loaded plugin with " + getManager(FeatureManager.class).getEnabledFeatures().size() + " features enabled! (" + (System.currentTimeMillis() - beforeLoading) + "ms)");
     }
 
@@ -86,30 +103,33 @@ public abstract class CrispyPluginAPI {
         CrispyLogger.log(plugin, Level.INFO, "Goodbye!");
     }
 
-
     public <T extends BaseManager> T getManager(Class<T> type) {
-        return type.cast(managers.get(type));
+        return type.cast(managerInstances.get(type));
     }
 
     public boolean reload() {
         beforeLoading = System.currentTimeMillis();
         boolean success = true;
-        for (ManagerType t : ManagerType.values()) {
-            try {
-                managers.get(t.getType()).reload();
-            } catch (BaseManager.ManagerReloadException e) {
-                if (e.stopLoading()) {
-                    CrispyLogger.printException(plugin, e, "Couldn't reload because this manager failed to reload: " + t.name() + ".");
-                    CrispyLogger.log(plugin, Level.SEVERE, "Fix it and restart the server.");
-                    return false;
-                }
-                if (e.requiresRestart()) {
-                    CrispyLogger.log(plugin, Level.WARNING, "This manager requires restarting: " + t.name());
-                    if (success)
-                        success = !e.requiresRestart();
+
+        for (ManagerType type : managers.keySet()) {
+            for (Class<? extends BaseManager> manager : managers.get(type)) {
+                try {
+                    managerInstances.get(manager).reload();
+                } catch (BaseManager.ManagerReloadException e) {
+                    if (e.stopLoading()) {
+                        CrispyLogger.printException(plugin, e, "Couldn't reload because this manager failed to reload: " + manager.getSimpleName() + ".");
+                        CrispyLogger.log(plugin, Level.SEVERE, "Fix it and restart the server.");
+                        return false;
+                    }
+                    if (e.requiresRestart()) {
+                        CrispyLogger.log(plugin, Level.WARNING, "This manager requires restarting: " + manager.getSimpleName());
+                        if (success)
+                            success = !e.requiresRestart();
+                    }
                 }
             }
         }
+
         if(!success)
             CrispyLogger.log(plugin, Level.WARNING, "RESTART REQUIRED! One or more features need restarting after reloading!");
         CrispyLogger.log(plugin, Level.INFO, "Finished reloading plugin with " + getManager(FeatureManager.class).getEnabledFeatures().size() + " features enabled! (" + (System.currentTimeMillis() - beforeLoading) + "ms)");
@@ -135,8 +155,11 @@ public abstract class CrispyPluginAPI {
     private void initManagers() {
         Arrays.stream(ManagerType.values()).forEach(m -> {
             try {
-                managers.put(m.getType(), (BaseManager) m.getType().getConstructors()[0].newInstance(this));
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                managers.put(m, new ArrayList<>());
+                managers.get(m).add(m.getDefaultManager());
+                managerInstances.put(m.getDefaultManager(), m.getDefaultManager().getConstructor(CrispyPluginAPI.class).newInstance(this));
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                     NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
         });
@@ -146,16 +169,17 @@ public abstract class CrispyPluginAPI {
     public enum ManagerType {
         CONFIG(ConfigManager.class),
         LANGUAGE(LanguageManager.class),
-        DATABASE(DataManager.class),
+        DATABASE(SimpleDataManager.class),
         FEATURE(FeatureManager.class);
 
-        private final Class<? extends BaseManager> type;
-        ManagerType(Class<? extends BaseManager> type) {
-            this.type = type;
+        private Class<? extends BaseManager> defaultManager;
+        ManagerType(Class<? extends BaseManager> defaultManager) {
+            this.defaultManager = defaultManager;
         }
 
-        public Class<? extends BaseManager> getType() {
-            return type;
+        public Class<? extends BaseManager> getDefaultManager() {
+            return defaultManager;
         }
+        private void setDefaultManager(Class<? extends BaseManager> defaultManager) { this.defaultManager = defaultManager; }
     }
 }

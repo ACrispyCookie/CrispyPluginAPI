@@ -7,20 +7,15 @@ import dev.acrispycookie.crispypluginapi.features.options.ConfigurationOption;
 import dev.acrispycookie.crispypluginapi.features.options.PersistentOption;
 import dev.acrispycookie.crispypluginapi.features.options.StringOption;
 import dev.acrispycookie.crispypluginapi.managers.ConfigManager;
-import dev.acrispycookie.crispypluginapi.managers.DataManager;
 import dev.acrispycookie.crispypluginapi.managers.LanguageManager;
 import dev.acrispycookie.crispypluginapi.utility.AdapterPair;
 import dev.dejvokep.boostedyaml.block.implementation.Section;
 import net.kyori.adventure.text.Component;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 public abstract class CrispyFeature<C extends ConfigurationOption, M extends StringOption, P extends StringOption, D extends PersistentOption> {
@@ -30,7 +25,7 @@ public abstract class CrispyFeature<C extends ConfigurationOption, M extends Str
     private final Set<FeatureCommand<?>> commands;
     private final Set<FeatureListener<?>> listeners;
     private static final Set<String> loadedDependencies = new HashSet<>();
-    private final CrispyPluginAPI api;
+    protected final CrispyPluginAPI api;
     public abstract String getName();
     protected abstract void onLoad();
     protected abstract boolean onReload();
@@ -47,14 +42,13 @@ public abstract class CrispyFeature<C extends ConfigurationOption, M extends Str
 
     public CrispyFeature(CrispyPluginAPI api) {
         this.api = api;
-        this.enabled = getEnabledOption();
         this.commands = new HashSet<>();
         this.listeners = new HashSet<>();
         serializableToRegister().forEach(AdapterPair::register);
-        getData().stream().map(D::clazz).forEach(api.getManager(DataManager.class)::registerAnnotated);
     }
 
     public boolean load() {
+        enabled = getEnabledOption();
         if (!enabled)
             return true;
         if (loaded)
@@ -134,38 +128,7 @@ public abstract class CrispyFeature<C extends ConfigurationOption, M extends Str
     }
 
     public <T> T getData(D option, Class<T> clazz, Object id) {
-        return commitDataTransaction(session -> {
-            return session.get(clazz, id);
-        });
-    }
-
-    public boolean commitDataTransaction(Consumer<Session> consumer) {
-        return commitDataTransaction(session -> {
-            consumer.accept(session);
-            return true;
-        }) != null;
-    }
-
-    public <T> T commitDataTransaction(Function<Session, T> consumer) {
-        DataManager manager = api.getManager(DataManager.class);
-        Session session = null;
-        Transaction transaction = null;
-        try {
-            session = manager.newSession();
-            transaction = session.beginTransaction();
-            T toReturn = consumer.apply(session);
-            transaction.commit();
-            session.close();
-            return toReturn;
-        } catch (Exception e) {
-            CrispyLogger.printException(api.getPlugin(), e, "Couldn't complete a data transaction from the feature: " + getName());
-            if (session != null) {
-                if (transaction != null)
-                    transaction.rollback();
-                session.close();
-            }
-            return null;
-        }
+        return null;
     }
 
     public Set<? extends FeatureCommand<?>> getCommands() {

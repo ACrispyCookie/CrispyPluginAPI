@@ -10,6 +10,7 @@ import dev.acrispycookie.crispycommons.platform.commands.PlatformListener;
 import dev.acrispycookie.crispycommons.platform.commands.SpigotListener;
 import dev.acrispycookie.crispypluginapi.CrispyPluginAPI;
 import dev.acrispycookie.crispypluginapi.features.CrispyFeature;
+import dev.acrispycookie.crispypluginapi.managers.BaseManager;
 import dev.acrispycookie.crispypluginapi.managers.ConfigManager;
 import dev.acrispycookie.crispypluginapi.spigot.features.base.BaseFeature;
 import dev.dejvokep.boostedyaml.settings.Settings;
@@ -52,6 +53,11 @@ public class SpigotPluginAPI extends CrispyPluginAPI {
 
     public SpigotPluginAPI addFeature(Class<? extends CrispyFeature<?, ?, ?, ?>> feature) {
         super.addFeature(feature);
+        return this;
+    }
+
+    public SpigotPluginAPI addManager(ManagerType manager, Class<? extends BaseManager> type) {
+        super.addManager(manager, type);
         return this;
     }
 

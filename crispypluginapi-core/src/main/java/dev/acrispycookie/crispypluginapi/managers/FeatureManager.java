@@ -22,21 +22,6 @@ public class FeatureManager extends BaseManager {
     }
 
     public void load() throws ManagerLoadException {
-        for (Class<? extends CrispyFeature<?, ?, ?, ?>> fClass : registeredFeatures) {
-            try {
-                CrispyFeature<?, ?, ?, ?> feature = (CrispyFeature<?, ?, ?, ?>) fClass.getConstructors()[0].newInstance(api);
-                features.put(feature.getName(), feature);
-            } catch (Exception e) {
-                CrispyLogger.printException(api.getPlugin(), e, "Couldn't load the feature " + fClass.getSimpleName());
-            }
-        }
-
-        ConfigManager configManager = api.getManager(ConfigManager.class);
-        DataManager dataManager = api.getManager(DataManager.class);
-        configManager.onSerializableRegister();
-        if (dataManager.isEnabled())
-            dataManager.onAnnotatedRegister();
-
         for (CrispyFeature<?, ?, ?, ?> feature : features.values()) {
             if (!feature.load())
                 throw new ManagerLoadException("Couldn't load the feature " + feature.getName());
@@ -65,6 +50,17 @@ public class FeatureManager extends BaseManager {
 
         if(!success) {
             throw new ManagerReloadException("", true, false);
+        }
+    }
+
+    public void initializeFeatures() {
+        for (Class<? extends CrispyFeature<?, ?, ?, ?>> fClass : registeredFeatures) {
+            try {
+                CrispyFeature<?, ?, ?, ?> feature = (CrispyFeature<?, ?, ?, ?>) fClass.getConstructors()[0].newInstance(api);
+                features.put(feature.getName(), feature);
+            } catch (Exception e) {
+                CrispyLogger.printException(api.getPlugin(), e, "Couldn't load the feature " + fClass.getSimpleName());
+            }
         }
     }
 

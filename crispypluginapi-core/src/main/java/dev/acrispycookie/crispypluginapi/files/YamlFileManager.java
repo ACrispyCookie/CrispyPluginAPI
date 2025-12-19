@@ -2,7 +2,7 @@ package dev.acrispycookie.crispypluginapi.files;
 
 import dev.acrispycookie.crispycommons.logging.CrispyLogger;
 import dev.acrispycookie.crispypluginapi.CrispyPluginAPI;
-import dev.acrispycookie.crispypluginapi.managers.DataManager;
+import dev.acrispycookie.crispypluginapi.managers.SimpleDataManager;
 import dev.dejvokep.boostedyaml.YamlDocument;
 import dev.dejvokep.boostedyaml.route.Route;
 import dev.dejvokep.boostedyaml.settings.Settings;
@@ -109,6 +109,6 @@ public class YamlFileManager extends DataFileManager {
     }
 
     private boolean shouldNotLoadDatabase(String field) {
-        return (!api.getManager(DataManager.class).isEnabled() && (field.startsWith("database.") || field.equals("database")));
+        return (!api.getManager(SimpleDataManager.class).isEnabled() && (field.startsWith("database.") || field.equals("database")));
     }
 }

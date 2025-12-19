@@ -16,7 +16,6 @@
         <boostedYamlVersion>1.3.7</boostedYamlVersion>
         <adventureTextSerializerVersion>4.17.0</adventureTextSerializerVersion>
         <gsonVersion>2.11.0</gsonVersion>
-        <hibernateVersion>6.6.0.Final</hibernateVersion>
     </properties>
 
     <dependencies>
@@ -39,11 +38,6 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gsonVersion}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>${hibernateVersion}</version>
         </dependency>
     </dependencies>
 </project>

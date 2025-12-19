@@ -12,8 +12,10 @@
 
     <modules>
         <module>crispypluginapi-core</module>
+        <module>crispypluginapi-database</module>
         <module>crispypluginapi-core-spigot</module>
         <module>crispypluginapi-spigot</module>
+        <module>crispypluginapi-database-spigot</module>
     </modules>
 
     <properties>
