@@ -1,5 +1,6 @@
 # User-specific stuff
 .idea/
+.gradle/
 
 *.iml
 *.ipr
@@ -96,6 +97,10 @@ $RECYCLE.BIN/
 *.lnk
 
 target/
+build/
+gradle/
+gradlew
+gradlew.bat
 
 pom.xml.tag
 pom.xml.releaseBackup
