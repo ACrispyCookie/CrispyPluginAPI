@@ -8,6 +8,7 @@
 
 # IntelliJ
 out/
+run/
 
 # Compiled class file
 *.class
@@ -98,9 +99,7 @@ $RECYCLE.BIN/
 
 target/
 build/
-gradle/
-gradlew
-gradlew.bat
+javadoc/
 
 pom.xml.tag
 pom.xml.releaseBackup
