@@ -22,3 +22,7 @@ subprojects {
         toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
+
+tasks.clean {
+    dependsOn(subprojects.map { it.tasks.named("clean") })
+}
