@@ -21,8 +21,20 @@ subprojects {
     java {
         toolchain.languageVersion.set(JavaLanguageVersion.of(21))
     }
+
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                from(components["java"])
+            }
+        }
+    }
 }
 
 tasks.clean {
     dependsOn(subprojects.map { it.tasks.named("clean") })
+}
+
+tasks.named("publishToMavenLocal") {
+    dependsOn(subprojects.map { it.tasks.named("publishToMavenLocal") })
 }
